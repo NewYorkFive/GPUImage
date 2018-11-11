@@ -16,7 +16,11 @@ contact@sunsetlakesoftware.com
 
 The GPUImage framework is a BSD-licensed iOS library that lets you apply GPU-accelerated filters and other effects to images, live camera video, and movies. In comparison to Core Image (part of iOS 5.0), GPUImage allows you to write your own custom filters, supports deployment to iOS 4.0, and has a simpler interface. However, it currently lacks some of the more advanced features of Core Image, such as facial detection.
 
+GPUImage framework是个基于bsd-licensed的iOS库，它可以让你让你将基于gpu加速的filter和其他特效施加在图片集、live视频、电影等上。和Core Image库类似，GPUImage允许你写自己的滤镜，支持到iOS4.0，而且GPUImage的接口简洁。然后，目前他还缺少一些Core Image的高级特性，如面部识别。
+
 For massively parallel operations like processing images or live video frames, GPUs have some significant performance advantages over CPUs. On an iPhone 4, a simple image filter can be over 100 times faster to perform on the GPU than an equivalent CPU-based filter.
+
+在做类似于图片处理或者live视频这种大量的平行运算处理时，GPUs相比CPU有着先出的性能优势。在iPhone4上，一个简单的图像filter，GPU相比同等的CPU，处理速度可以快上100倍。
 
 However, running custom filters on the GPU requires a lot of code to set up and maintain an OpenGL ES 2.0 rendering target for these filters. I created a sample project to do this:
 
@@ -24,7 +28,13 @@ http://www.sunsetlakesoftware.com/2010/10/22/gpu-accelerated-video-processing-ma
 
 and found that there was a lot of boilerplate code I had to write in its creation. Therefore, I put together this framework that encapsulates a lot of the common tasks you'll encounter when processing images and video and made it so that you don't need to care about the OpenGL ES 2.0 underpinnings.
 
+然而，在GPU上运行一个自定义的filters需要写一大批代码去建立和维护OpenGL ES 2.0 渲染目标、和这些filter。我创建了一个简单的工程来做这件事:
+http://www.sunsetlakesoftware.com/2010/10/22/gpu-accelerated-video-processing-mac-and-ios
+然后我发现在他创建的过程中写了很多样板代码。因此，我将它们放在这个framework中，这个framework囊括了一大批通用的、你可能在处理图像集、视频可能需要的task；这样你就不用在意OpenGL 2.0的基础，就可以使用的它们。
+
 This framework compares favorably to Core Image when handling video, taking only 2.5 ms on an iPhone 4 to upload a frame from the camera, apply a gamma filter, and display, versus 106 ms for the same operation using Core Image. CPU-based processing takes 460 ms, making GPUImage 40X faster than Core Image for this operation on this hardware, and 184X faster than CPU-bound processing. On an iPhone 4S, GPUImage is only 4X faster than Core Image for this case, and 102X faster than CPU-bound processing. However, for more complex operations like Gaussian blurs at larger radii, Core Image currently outpaces GPUImage.
+
+这个framework相比熟知的CoreImage，在处理视频时，在一台iphone4上上传一个frame到camera，运用一个算法滤镜并显示，相对使用core image做相同的运算需要106ms，GPUImage仅需要2.5ms。基于CPU的处理则需要花费460ms。做这相同的运算，GPUImage比Core Image快了近40多倍，相比CPU处理的快了184倍。然而，在大范围的像素中使用高斯模糊这种更复杂的运算，CoreImage是超过GPUImage的。
 
 ## License ##
 
@@ -42,11 +52,20 @@ BSD-style, with the full license available with the framework in License.txt.
 
 GPUImage uses OpenGL ES 2.0 shaders to perform image and video manipulation much faster than could be done in CPU-bound routines. However, it hides the complexity of interacting with the OpenGL ES API in a simplified Objective-C interface. This interface lets you define input sources for images and video, attach filters in a chain, and send the resulting processed image or video to the screen, to a UIImage, or to a movie on disk.
 
+GPUImage 用OpenGL ES 2.0 着色器去执行图像和视频的操作，这回避基于CPU的快很多。然而，在一个简单的Objective-C的接口里面，隐藏了很多复杂的关于OpenGL ES API的调用的。这个接口可以让你为图像集、视频定义一个输入源，然后添加filter，只收将处理完的结果图像展示到显示屏上，或者一个uiimage中，或者作为一个电影存到硬盘中。
+
 Images or frames of video are uploaded from source objects, which are subclasses of GPUImageOutput. These include GPUImageVideoCamera (for live video from an iOS camera), GPUImageStillCamera (for taking photos with the camera), GPUImagePicture (for still images), and GPUImageMovie (for movies). Source objects upload still image frames to OpenGL ES as textures, then hand those textures off to the next objects in the processing chain.
+
+视频图像的每一帧都会从目标源传过来，这个目标源必须传出的是GPUImageOutput的类型。他们包括GPUImageVideoCamera(iOS 摄像头采集的live视频)，GPUImageStillCamera(用摄像头照相)，GPUImagePicture(静态图片)，GPUImageMovie(视频)。目标源上传静态图片帧给OpenGL ES 作为textures，之后将这些textures分发给处理环节的下一个对象。
 
 Filters and other subsequent elements in the chain conform to the GPUImageInput protocol, which lets them take in the supplied or processed texture from the previous link in the chain and do something with it. Objects one step further down the chain are considered targets, and processing can be branched by adding multiple targets to a single output or filter.
 
+Filters 和处理环节链的其他子类元素遵守GPUImageInput协议，这样让他们在之前的环节链中参与进来提供或者处理texture。Objects one step further down the chain are considered targets, and processing can be branched by adding multiple targets to a single output or filter.
+
 For example, an application that takes in live video from the camera, converts that video to a sepia tone, then displays the video onscreen would set up a chain looking something like the following:
+
+例如，一个从camera采集live视频的应用程序，将video转化为老照片的特效，它的展示视频到屏幕上的过程可以概括为以下流程：
+
 
     GPUImageVideoCamera -> GPUImageSepiaFilter -> GPUImageView
 
@@ -263,26 +282,31 @@ The one caution with this approach is that the textures used in these processes 
 
 There are currently 125 built-in filters, divided into the following categories:
 
-### Color adjustments ###
+### Color adjustments 色彩调节###
 
 - **GPUImageBrightnessFilter**: Adjusts the brightness of the image
   - *brightness*: The adjusted brightness (-1.0 - 1.0, with 0.0 as the default)
+  - 亮度
 
 - **GPUImageExposureFilter**: Adjusts the exposure of the image
   - *exposure*: The adjusted exposure (-10.0 - 10.0, with 0.0 as the default)
+  - 曝光
 
 - **GPUImageContrastFilter**: Adjusts the contrast of the image
   - *contrast*: The adjusted contrast (0.0 - 4.0, with 1.0 as the default)
+  - 对比度
 
 - **GPUImageSaturationFilter**: Adjusts the saturation of an image
   - *saturation*: The degree of saturation or desaturation to apply to the image (0.0 - 2.0, with 1.0 as the default)
+  - 饱和度
 
 - **GPUImageGammaFilter**: Adjusts the gamma of an image
   - *gamma*: The gamma adjustment to apply (0.0 - 3.0, with 1.0 as the default)
+  - 伽马值
 
-- **GPUImageLevelsFilter**: Photoshop-like levels adjustment. The min, max, minOut and maxOut parameters are floats in the range [0, 1]. If you have parameters from Photoshop in the range [0, 255] you must first convert them to be [0, 1]. The gamma/mid parameter is a float >= 0. This matches the value from Photoshop. If you want to apply levels to RGB as well as individual channels you need to use this filter twice - first for the individual channels and then for all channels.
+- **GPUImageLevelsFilter(色阶)**: Photoshop-like levels adjustment. The min, max, minOut and maxOut parameters are floats in the range [0, 1]. If you have parameters from Photoshop in the range [0, 255] you must first convert them to be [0, 1]. The gamma/mid parameter is a float >= 0. This matches the value from Photoshop. If you want to apply levels to RGB as well as individual channels you need to use this filter twice - first for the individual channels and then for all channels.
 
-- **GPUImageColorMatrixFilter**: Transforms the colors of an image by applying a matrix to them
+- **GPUImageColorMatrixFilter（颜色矩阵）**: Transforms the colors of an image by applying a matrix to them
   - *colorMatrix*: A 4x4 matrix used to transform each color in an image
   - *intensity*: The degree to which the new transformed color replaces the original color for each pixel
 
@@ -293,13 +317,16 @@ There are currently 125 built-in filters, divided into the following categories:
 
 - **GPUImageHueFilter**: Adjusts the hue of an image
   - *hue*: The hue angle, in degrees. 90 degrees by default
+  - 色度
 
 - **GPUImageVibranceFilter**: Adjusts the vibrance of an image
   - *vibrance*: The vibrance adjustment to apply, using 0.0 as the default, and a suggested min/max of around -1.2 and 1.2, respectively.
+  - 自然饱和度
 
 - **GPUImageWhiteBalanceFilter**: Adjusts the white balance of an image.
   - *temperature*: The temperature to adjust the image by, in ºK. A value of 4000 is very cool and 7000 very warm. The default value is 5000. Note that the scale between 4000 and 5000 is nearly as visually significant as that between 5000 and 7000.
   - *tint*: The tint to adjust the image by. A value of -200 is *very* green and 200 is *very* pink. The default value is 0.  
+  - 白平衡
 
 - **GPUImageToneCurveFilter**: Adjusts the colors of an image based on spline curves for each color channel.
   - *redControlPoints*:
@@ -310,6 +337,7 @@ There are currently 125 built-in filters, divided into the following categories:
 - **GPUImageHighlightShadowFilter**: Adjusts the shadows and highlights of an image
   - *shadows*: Increase to lighten shadows, from 0.0 to 1.0, with 0.0 as the default.
   - *highlights*: Decrease to darken highlights, from 1.0 to 0.0, with 1.0 as the default.
+  - 高亮
 
 - **GPUImageHighlightShadowTintFilter**: Allows you to tint the shadows and highlights of an image independently using a color and intensity
   - *shadowTintColor*: Shadow tint RGB color (GPUVector4). Default: `{1.0f, 0.0f, 0.0f, 1.0f}` (red).
@@ -336,6 +364,7 @@ There are currently 125 built-in filters, divided into the following categories:
 - **GPUImageColorInvertFilter**: Inverts the colors of an image
 
 - **GPUImageGrayscaleFilter**: Converts an image to grayscale (a slightly faster implementation of the saturation filter, without the ability to vary the color contribution)
+- 灰度
 
 - **GPUImageMonochromeFilter**: Converts the image to a single-color version, based on the luminance of each pixel
   - *intensity*: The degree to which the specific color replaces the normal image color (0.0 - 1.0, with 1.0 as the default)
@@ -348,6 +377,7 @@ There are currently 125 built-in filters, divided into the following categories:
 - **GPUImageHazeFilter**: Used to add or remove haze (similar to a UV filter)
   - *distance*: Strength of the color applied. Default 0. Values between -.3 and .3 are best.
   - *slope*: Amount of color change. Default 0. Values between -.3 and .3 are best.
+  - 阴影
 
 - **GPUImageSepiaFilter**: Simple sepia tone filter
   - *intensity*: The degree to which the sepia tone replaces the normal image color (0.0 - 1.0, with 1.0 as the default)
@@ -438,6 +468,7 @@ There are currently 125 built-in filters, divided into the following categories:
   - *downsampling*: The degree to which to downsample, then upsample the incoming image to minimize computations within the Gaussian blur, with a default of 4.0.
 
 - **GPUImageMedianFilter**: Takes the median value of the three color components, over a 3x3 area
+- 中值线
 
 - **GPUImageBilateralFilter**: A bilateral blur, which tries to blur similar color values while preserving sharp edges
   - *texelSpacingMultiplier*: A multiplier for the spacing between texel reads, ranging from 0.0 on up, with a default of 4.0
@@ -503,6 +534,7 @@ There are currently 125 built-in filters, divided into the following categories:
 - **GPUImageRGBDilationFilter**: This is the same as the GPUImageDilationFilter, except that this acts on all color channels, not just the red channel.
 
 - **GPUImageErosionFilter**: This performs an image erosion operation, where the minimum intensity of the red channel in a rectangular neighborhood is used for the intensity of this pixel. The radius of the rectangular area to sample over is specified on initialization, with a range of 1-4 pixels. This is intended for use with grayscale images, and it expands dark regions.
+- 腐蚀
 
 - **GPUImageRGBErosionFilter**: This is the same as the GPUImageErosionFilter, except that this acts on all color channels, not just the red channel.
 
@@ -546,9 +578,11 @@ There are currently 125 built-in filters, divided into the following categories:
 - **GPUImageChromaKeyBlendFilter**: Selectively replaces a color in the first image with the second image
   - *thresholdSensitivity*: How close a color match needs to exist to the target color to be replaced (default of 0.4)
   - *smoothing*: How smoothly to blend for the color match (default of 0.1)
+  - 浓度
 
 - **GPUImageDissolveBlendFilter**: Applies a dissolve blend of two images
   - *mix*: The degree with which the second image overrides the first (0.0 - 1.0, with 0.5 as the default)
+  - 
 
 - **GPUImageMultiplyBlendFilter**: Applies a multiply blend of two images
 
